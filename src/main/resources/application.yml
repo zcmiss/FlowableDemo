@@ -1,0 +1,16 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: flowable-demo
+
+  datasource:
+    url: jdbc:mysql://192.168.1.200:3306/flowable?serverTimezone=Asia/Shanghai&useSSL=false&nullCatalogMeansCurrent=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+flowable:
+  database-schema-update: true
+
