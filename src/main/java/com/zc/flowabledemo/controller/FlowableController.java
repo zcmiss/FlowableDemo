@@ -1,6 +1,5 @@
 package com.zc.flowabledemo.controller;
 
-
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +20,9 @@ import java.io.OutputStream;
 import java.util.*;
 
 /**
+ * 控制器类，用于处理流程相关的请求
+ *
  * @author zengc
- * @date 2024/05/06
  */
 @RestController
 @Slf4j
@@ -37,13 +37,14 @@ public class FlowableController {
     @Resource
     private ProcessEngine processEngine;
 
+    // 定义角色常量
     private static final String EMPLOYEE = "1001";
     private static final String MENTOR = "101";
     private static final String MANAGER = "10";
 
 
     /**
-     * 显示与给定流程ID关联的流程图。
+     * 根据给定的流程ID显示流程图。
      *
      * @param response  用于处理HTTP响应的HttpServletResponse对象
      * @param processId 表示流程实例的唯一标识符的字符串
@@ -99,15 +100,18 @@ public class FlowableController {
             }
         } finally {
             // 关闭输入流和输出流
-            if (inputStream != null) {
+            if (Objects.nonNull(inputStream)) {
                 inputStream.close();
             }
-            if (out != null) {
+            if (Objects.nonNull(out)) {
                 out.close();
             }
         }
     }
 
+    /**
+     * 启动流程实例
+     */
     @PostMapping("/start")
     public void start() {
         Map<String, Object> map = Map.of(
@@ -133,13 +137,14 @@ public class FlowableController {
 
         tasks.forEach(task -> {
             Map<String, Object> variables = taskService.getVariables(task.getId());
-            log.info("员工任务：任务id:{}, 请假人：{}, 请假原因：{}, 请假天数：{}", task.getId(), variables.get("name"), variables.get("reason"), variables.get("days"));
-            Map<String, Object> map = new HashMap<>();
+            log.info("员工任务：任务id:{}, 请假人：{}, 请假原因：{}, 请假天数：{}",
+                    task.getId(), variables.get("name"), variables.get("reason"), variables.get("days"));
+
+            Map<String, Object> map = new HashMap<>(1);
             map.put("mentor", MENTOR);
             taskService.complete(task.getId(), map);
         });
     }
-
 
     /**
      * 组长提交给经理
@@ -148,7 +153,6 @@ public class FlowableController {
      */
     @PostMapping("/submitToManager")
     public void submitToManager(Boolean approved) {
-        System.out.println(approved);
         List<Task> tasks = taskService.createTaskQuery()
                 .taskAssignee(MENTOR)
                 .orderByTaskId()
@@ -157,8 +161,9 @@ public class FlowableController {
 
         tasks.forEach(task -> {
             Map<String, Object> variables = taskService.getVariables(task.getId());
-            log.info("组长任务：任务id:{}, 请假人：{}, 请假原因：{}, 请假天数：{}", task.getId(), variables.get("name"), variables.get("reason"), variables.get("days"));
-            Map<String, Object> map = new HashMap<>();
+            log.info("组长任务：任务id:{}, 请假人：{}, 请假原因：{}, 请假天数：{}",
+                    task.getId(), variables.get("name"), variables.get("reason"), variables.get("days"));
+            Map<String, Object> map = new HashMap<>(1);
             map.put("approved", approved);
             if (approved) {
                 map.put("manager", MANAGER);
@@ -182,8 +187,9 @@ public class FlowableController {
 
         tasks.forEach(task -> {
             Map<String, Object> variables = taskService.getVariables(task.getId());
-            log.info("经理任务：任务id:{}, 请假人：{}, 请假原因：{}, 请假天数：{}", task.getId(), variables.get("name"), variables.get("reason"), variables.get("days"));
-            Map<String, Object> map = new HashMap<>();
+            log.info("经理任务：任务id:{}, 请假人：{}, 请假原因：{}, 请假天数：{}",
+                    task.getId(), variables.get("name"), variables.get("reason"), variables.get("days"));
+            Map<String, Object> map = new HashMap<>(1);
             map.put("approved", approved);
             taskService.complete(task.getId(), map);
         });
