@@ -6,11 +6,11 @@ spring:
     name: flowable-demo
 
   datasource:
-    url: jdbc:mysql://192.168.1.200:3306/flowable?serverTimezone=Asia/Shanghai&useSSL=false&nullCatalogMeansCurrent=true
+    url: jdbc:mysql://localhost:3306/flowable?serverTimezone=Asia/Shanghai&useSSL=false&nullCatalogMeansCurrent=true
     username: root
-    password: 123456
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
 
 flowable:
   database-schema-update: true
-
+  process-definition-location-prefix: classpath:/flowable/
