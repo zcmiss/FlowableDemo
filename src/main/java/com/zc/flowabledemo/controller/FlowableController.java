@@ -8,6 +8,7 @@ import org.flowable.engine.runtime.Execution;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.image.ProcessDiagramGenerator;
 import org.flowable.task.api.Task;
+import org.flowable.task.api.history.HistoricTaskInstance;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -46,7 +47,7 @@ public class FlowableController {
         map.put("reason", oaStartVo.getDescription());
 
         ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("ExpenseProcess", map);
-        log.info("开启请假流程 processId:{}", processInstance.getId());
+        log.info("开启请假流程 processId:{}", processInstance.toString());
         return "提交成功.流程Id为：" + processInstance.getId();
     }
 
@@ -70,7 +71,7 @@ public class FlowableController {
     @GetMapping("/apply")
     public String apply(@RequestParam("taskId") String taskId) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-        if (task == null) {
+        if (Objects.isNull(task)) {
             throw new RuntimeException("流程不存在");
         }
         //通过审核
@@ -152,5 +153,29 @@ public class FlowableController {
                 out.close();
             }
         }
+    }
+
+    /**
+     * 查询审批结束后的列表
+     *
+     * @param userId 用户ID
+     * @return {@link String }  审批结束后的列表
+     */
+    @GetMapping("/listFinished")
+    public String listFinished(@RequestParam("userId") String userId) {
+        // 查询已经完成的任务
+        List<HistoricTaskInstance> list = processEngine.getHistoryService()
+                // 创建历史任务实例查询
+                .createHistoricTaskInstanceQuery()
+                // 指定历史任务的办理人
+                .taskAssignee(userId)
+                // 查询已经完成的任务
+                .finished()
+                // 根据任务的结束时间降序排序
+                .orderByHistoricTaskInstanceEndTime()
+                .desc()
+                // 返回结果
+                .list();
+        return Arrays.toString(list.toArray());
     }
 }
