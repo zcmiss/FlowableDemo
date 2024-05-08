@@ -1,7 +1,6 @@
 package com.zc.flowabledemo.controller;
 
-import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletResponse;
+import com.zc.flowabledemo.vo.OAStartVo;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.engine.*;
@@ -9,12 +8,10 @@ import org.flowable.engine.runtime.Execution;
 import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.image.ProcessDiagramGenerator;
 import org.flowable.task.api.Task;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
@@ -37,161 +34,123 @@ public class FlowableController {
     @Resource
     private ProcessEngine processEngine;
 
-    // 定义角色常量
-    private static final String EMPLOYEE = "1001";
-    private static final String MENTOR = "101";
-    private static final String MANAGER = "10";
+    /**
+     * 启动流程实例
+     */
+    @PostMapping("/start")
+    public String start(@RequestBody OAStartVo oaStartVo) {
 
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("taskUser", oaStartVo.getUserId());
+        map.put("money", oaStartVo.getMoney());
+        map.put("reason", oaStartVo.getDescription());
+
+        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("ExpenseProcess", map);
+        log.info("开启请假流程 processId:{}", processInstance.getId());
+        return "提交成功.流程Id为：" + processInstance.getId();
+    }
 
     /**
-     * 根据给定的流程ID显示流程图。
-     *
-     * @param response  用于处理HTTP响应的HttpServletResponse对象
-     * @param processId 表示流程实例的唯一标识符的字符串
-     * @throws IOException 如果在读取或写入时发生I/O错误
+     * 获取审批管理列表
      */
-    @GetMapping("/pic")
-    public void showProcessDiagram(HttpServletResponse response, @RequestParam("processId") String processId) throws IOException {
-        // 检索流程实例信息
-        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery().processInstanceId(processId).singleResult();
+    @GetMapping(value = "/list")
+    public String list(@RequestParam("userId") String userId) {
+        List<Task> tasks = taskService.createTaskQuery().taskAssignee(userId).orderByTaskCreateTime().desc().list();
+        for (Task task : tasks) {
+            log.info("任务ID:{}", task.getId());
+        }
+        return Arrays.toString(tasks.toArray());
+    }
 
-        // 如果未找到流程实例，则返回
-        if (processInstance == null) {
+    /**
+     * 批准
+     *
+     * @param taskId 任务ID
+     */
+    @GetMapping("/apply")
+    public String apply(@RequestParam("taskId") String taskId) {
+        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
+        if (task == null) {
+            throw new RuntimeException("流程不存在");
+        }
+        //通过审核
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("outcome", "通过");
+        taskService.complete(taskId, map);
+        return "processed ok!";
+    }
+
+    /**
+     * 拒绝
+     */
+    @GetMapping("/reject")
+    public String reject(String taskId) {
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("outcome", "驳回");
+        taskService.complete(taskId, map);
+        return "reject";
+    }
+
+    /**
+     * 生成流程图
+     *
+     * @param processId 任务ID
+     */
+    @GetMapping("/processDiagram")
+    public void genProcessDiagram(HttpServletResponse httpServletResponse, String processId) throws Exception {
+        ProcessInstance pi = runtimeService.createProcessInstanceQuery().processInstanceId(processId).singleResult();
+
+        //流程走完的不显示图
+        if (Objects.isNull(pi)) {
             return;
         }
-
-        // 检索流程实例的执行列表
-        List<Execution> executions = runtimeService.createExecutionQuery()
-                .processInstanceId(processId)
+        Task task = taskService.createTaskQuery().processInstanceId(pi.getId()).singleResult();
+        //使用流程实例ID，查询正在执行的执行对象表，返回流程实例对象
+        String instanceId = task.getProcessInstanceId();
+        List<Execution> executions = runtimeService
+                .createExecutionQuery()
+                .processInstanceId(instanceId)
                 .list();
 
-        // 从执行中提取活动的活动ID
+        //得到正在执行的Activity的Id
         List<String> activityIds = new ArrayList<>();
-        executions.forEach(execution -> {
-            List<String> activeActivityIds = runtimeService.getActiveActivityIds(execution.getId());
-            activityIds.addAll(activeActivityIds);
-        });
+        List<String> flows = new ArrayList<>();
+        for (Execution exe : executions) {
+            List<String> ids = runtimeService.getActiveActivityIds(exe.getId());
+            activityIds.addAll(ids);
+        }
 
-        // 生成流程图
-        BpmnModel bpmnModel = repositoryService.getBpmnModel(processInstance.getProcessDefinitionId());
-        ProcessEngineConfiguration processEngineConfiguration = processEngine.getProcessEngineConfiguration();
-        ProcessDiagramGenerator processDiagramGenerator = processEngineConfiguration.getProcessDiagramGenerator();
-        InputStream inputStream = processDiagramGenerator.generateDiagram(
+        //获取流程图
+        BpmnModel bpmnModel = repositoryService.getBpmnModel(pi.getProcessDefinitionId());
+        ProcessEngineConfiguration engconf = processEngine.getProcessEngineConfiguration();
+        ProcessDiagramGenerator diagramGenerator = engconf.getProcessDiagramGenerator();
+        InputStream in = diagramGenerator.generateDiagram(
                 bpmnModel,
                 "png",
                 activityIds,
-                // 不需要流程图的流程路径
-                Collections.emptyList(),
-                processEngineConfiguration.getActivityFontName(),
-                processEngineConfiguration.getLabelFontName(),
-                processEngineConfiguration.getAnnotationFontName(),
-                processEngineConfiguration.getClassLoader(),
+                flows,
+                engconf.getActivityFontName(),
+                engconf.getLabelFontName(),
+                engconf.getAnnotationFontName(),
+                engconf.getClassLoader(),
                 1.0,
-                false
+                true
         );
-
         OutputStream out = null;
+        byte[] buf = new byte[1024];
+        int legth = 0;
         try {
-            out = response.getOutputStream();
-            byte[] bytes = new byte[2048];
-            int length;
-            while ((length = inputStream.read(bytes)) != -1) {
-                out.write(bytes, 0, length);
+            out = httpServletResponse.getOutputStream();
+            while ((legth = in.read(buf)) != -1) {
+                out.write(buf, 0, legth);
             }
         } finally {
-            // 关闭输入流和输出流
-            if (Objects.nonNull(inputStream)) {
-                inputStream.close();
+            if (Objects.nonNull(in)) {
+                in.close();
             }
             if (Objects.nonNull(out)) {
                 out.close();
             }
         }
-    }
-
-    /**
-     * 启动流程实例
-     */
-    @PostMapping("/start")
-    public void start() {
-        Map<String, Object> map = Map.of(
-                "employee", EMPLOYEE,
-                "name", "ego",
-                "reason", "出去玩",
-                "days", 10
-        );
-        ProcessInstance instance = runtimeService.startProcessInstanceByKey("flows-task", map);
-        log.info("开启请假流程 processId:{}", instance.getId());
-    }
-
-    /**
-     * 员工提交给组长
-     */
-    @PostMapping("/submitToMentor")
-    public void submitToMentor() {
-        List<Task> tasks = taskService.createTaskQuery()
-                //.taskAssignee(EMPLOYEE)
-                .orderByTaskId()
-                .desc()
-                .list();
-
-        tasks.forEach(task -> {
-            Map<String, Object> variables = taskService.getVariables(task.getId());
-            log.info("员工任务：任务id:{}, 请假人：{}, 请假原因：{}, 请假天数：{}",
-                    task.getId(), variables.get("name"), variables.get("reason"), variables.get("days"));
-
-            Map<String, Object> map = new HashMap<>(1);
-            map.put("mentor", MENTOR);
-            taskService.complete(task.getId(), map);
-        });
-    }
-
-    /**
-     * 组长提交给经理
-     *
-     * @param approved 是否通过
-     */
-    @PostMapping("/submitToManager")
-    public void submitToManager(Boolean approved) {
-        List<Task> tasks = taskService.createTaskQuery()
-                .taskAssignee(MENTOR)
-                .orderByTaskId()
-                .desc()
-                .list();
-
-        tasks.forEach(task -> {
-            Map<String, Object> variables = taskService.getVariables(task.getId());
-            log.info("组长任务：任务id:{}, 请假人：{}, 请假原因：{}, 请假天数：{}",
-                    task.getId(), variables.get("name"), variables.get("reason"), variables.get("days"));
-            Map<String, Object> map = new HashMap<>(1);
-            map.put("approved", approved);
-            if (approved) {
-                map.put("manager", MANAGER);
-            }
-            taskService.complete(task.getId(), map);
-        });
-    }
-
-    /**
-     * 经理审核
-     *
-     * @param approved 是否通过
-     */
-    @PostMapping("/managerApprove")
-    public void managerApprove(Boolean approved) {
-        List<Task> tasks = taskService.createTaskQuery()
-                .taskAssignee(MANAGER)
-                .orderByTaskId()
-                .desc()
-                .list();
-
-        tasks.forEach(task -> {
-            Map<String, Object> variables = taskService.getVariables(task.getId());
-            log.info("经理任务：任务id:{}, 请假人：{}, 请假原因：{}, 请假天数：{}",
-                    task.getId(), variables.get("name"), variables.get("reason"), variables.get("days"));
-            Map<String, Object> map = new HashMap<>(1);
-            map.put("approved", approved);
-            taskService.complete(task.getId(), map);
-        });
     }
 }

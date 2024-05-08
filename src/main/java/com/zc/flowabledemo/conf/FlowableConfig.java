@@ -1,4 +1,4 @@
-package com.zc.flowabledemo.configuration;
+package com.zc.flowabledemo.conf;
 
 import org.flowable.spring.SpringProcessEngineConfiguration;
 import org.flowable.spring.boot.EngineConfigurationConfigurer;
@@ -16,4 +16,5 @@ public class FlowableConfig implements EngineConfigurationConfigurer<SpringProce
         engineConfiguration.setLabelFontName("宋体");
         engineConfiguration.setAnnotationFontName("宋体");
     }
+
 }
