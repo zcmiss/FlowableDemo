@@ -55,12 +55,14 @@ public class FlowableController {
      * 获取审批管理列表
      */
     @GetMapping(value = "/list")
-    public String list(@RequestParam("userId") String userId) {
+    public List<Task> list(@RequestParam("userId") String userId) {
         List<Task> tasks = taskService.createTaskQuery().taskAssignee(userId).orderByTaskCreateTime().desc().list();
         for (Task task : tasks) {
             log.info("任务ID:{}", task.getId());
         }
-        return Arrays.toString(tasks.toArray());
+        log.info("任务数量:{}", tasks.size());
+        log.info("任务列表:{}", tasks);
+        return tasks;
     }
 
     /**
@@ -162,7 +164,7 @@ public class FlowableController {
      * @return {@link String }  审批结束后的列表
      */
     @GetMapping("/listFinished")
-    public String listFinished(@RequestParam("userId") String userId) {
+    public List<HistoricTaskInstance> listFinished(@RequestParam("userId") String userId) {
         // 查询已经完成的任务
         List<HistoricTaskInstance> list = processEngine.getHistoryService()
                 // 创建历史任务实例查询
@@ -176,6 +178,9 @@ public class FlowableController {
                 .desc()
                 // 返回结果
                 .list();
-        return Arrays.toString(list.toArray());
+
+        log.info("已完成的任务数量：{}", list.size());
+        log.info("已完成的任务列表：{}", list);
+        return list;
     }
 }
