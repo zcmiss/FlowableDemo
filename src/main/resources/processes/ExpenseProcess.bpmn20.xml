@@ -32,7 +32,7 @@
                       targetRef="sid-91719743-96b1-4fd5-a901-b2f790f767bb">
             <conditionExpression xsi:type="tFormalExpression"><![CDATA[${outcome=='通过'}]]></conditionExpression>
         </sequenceFlow>
-        <userTask id="sid-0cb3c4d2-7752-4156-af53-cd3d2f6902ae" flowable:exclusive="true" name="老板">
+        <userTask id="sid-0cb3c4d2-7752-4156-af53-cd3d2f6902ae" flowable:exclusive="true" name="老板审批">
             <extensionElements>
                 <flowable:taskListener event="create" class="com.zc.flowabledemo.task.BossTaskHandler"/>
             </extensionElements>

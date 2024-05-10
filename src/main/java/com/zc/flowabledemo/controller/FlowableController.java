@@ -55,14 +55,25 @@ public class FlowableController {
      * 获取审批管理列表
      */
     @GetMapping(value = "/list")
-    public List<Task> list(@RequestParam("userId") String userId) {
+    public List<Map<String, Object>> list(@RequestParam("userId") String userId) {
         List<Task> tasks = taskService.createTaskQuery().taskAssignee(userId).orderByTaskCreateTime().desc().list();
-        for (Task task : tasks) {
-            log.info("任务ID:{}", task.getId());
-        }
         log.info("任务数量:{}", tasks.size());
         log.info("任务列表:{}", tasks);
-        return tasks;
+        List<Map<String, Object>> list = new ArrayList<>();
+        tasks.forEach(task -> {
+            HashMap<String, Object> objectObjectHashMap = new HashMap<>();
+            objectObjectHashMap.put("taskName", task.getName());
+            objectObjectHashMap.put("taskId", task.getId());
+            objectObjectHashMap.put("taskCreateTime", task.getCreateTime());
+            Integer money = (Integer) runtimeService.getVariable(task.getId(), "money");
+            objectObjectHashMap.put("money", money);
+            String reason = (String) runtimeService.getVariable(task.getId(), "reason");
+            objectObjectHashMap.put("description", reason);
+            objectObjectHashMap.put("taskCreateTime", task.getCreateTime());
+            log.info("任务信息:{}", objectObjectHashMap);
+            list.add(objectObjectHashMap);
+        });
+        return list;
     }
 
     /**
@@ -164,9 +175,9 @@ public class FlowableController {
      * @return {@link String }  审批结束后的列表
      */
     @GetMapping("/listFinished")
-    public List<HistoricTaskInstance> listFinished(@RequestParam("userId") String userId) {
+    public List<Map<String, Object>> listFinished(@RequestParam("userId") String userId) {
         // 查询已经完成的任务
-        List<HistoricTaskInstance> list = processEngine.getHistoryService()
+        List<HistoricTaskInstance> historicTaskInstances = processEngine.getHistoryService()
                 // 创建历史任务实例查询
                 .createHistoricTaskInstanceQuery()
                 // 指定历史任务的办理人
@@ -179,8 +190,24 @@ public class FlowableController {
                 // 返回结果
                 .list();
 
-        log.info("已完成的任务数量：{}", list.size());
-        log.info("已完成的任务列表：{}", list);
+        log.info("已完成的任务数量：{}", historicTaskInstances.size());
+        log.info("已完成的任务列表：{}", historicTaskInstances);
+
+        List<Map<String, Object>> list = new ArrayList<>();
+        historicTaskInstances.forEach(historicTaskInstance -> {
+            HashMap<String, Object> objectObjectHashMap = new HashMap<>();
+            objectObjectHashMap.put("taskName", historicTaskInstance.getName());
+            objectObjectHashMap.put("taskId", historicTaskInstance.getId());
+            objectObjectHashMap.put("taskCreateTime", historicTaskInstance.getCreateTime());
+            Integer money = (Integer) runtimeService.getVariable(historicTaskInstance.getId(), "money");
+            objectObjectHashMap.put("money", money);
+            String reason = (String) runtimeService.getVariable(historicTaskInstance.getId(), "reason");
+            objectObjectHashMap.put("description", reason);
+            objectObjectHashMap.put("taskCreateTime", historicTaskInstance.getCreateTime());
+            log.info("任务信息:{}", objectObjectHashMap);
+            list.add(objectObjectHashMap);
+        });
         return list;
     }
+
 }
