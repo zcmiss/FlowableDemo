@@ -137,6 +137,19 @@
             <systemPath>${basedir}/lib/spire.office.free-5.3.1.jar</systemPath>
             <scope>system</scope>
         </dependency>
+
+        <!--<dependency>
+            <groupId>com.aspose</groupId>
+            <artifactId>aspose-words</artifactId>
+            <version>21.8</version>
+        </dependency>-->
+
+        <dependency>
+            <groupId>com.luhuiguo</groupId>
+            <artifactId>aspose-words</artifactId>
+            <version>23.1</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml-full</artifactId>
