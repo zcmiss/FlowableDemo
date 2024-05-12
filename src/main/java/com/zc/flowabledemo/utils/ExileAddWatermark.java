@@ -94,7 +94,7 @@ public class ExileAddWatermark {
             out = new FileOutputStream(outputFilePath);
             log.info(outputFilePath);
             outImgStream.close();
-            boolean res = new File(tarImgPath).delete();
+            //boolean res = new File(tarImgPath).delete();
             workbook.write(out);
         } catch (Exception e) {
             log.error("excel文件添加水印异常", e);
@@ -127,7 +127,7 @@ public class ExileAddWatermark {
                     log.error("水印图片字节流关闭异常", e);
                 }
             }
-            boolean delete = new File(tarImgPath).delete();
+            //boolean delete = new File(tarImgPath).delete();
         }
     }
 
@@ -379,7 +379,7 @@ public class ExileAddWatermark {
 
     public static void main(String[] args) {
         xlsAddWatermark("intput.xls", "水印水印水印");
-        //xlsxAddWatermark("intput.xlsx", "水印水印水印");
+        xlsxAddWatermark("intput.xlsx", "水印水印水印");
     }
 }
 

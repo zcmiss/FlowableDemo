@@ -53,9 +53,9 @@ public class FontImageUtil {
             }
         }
         String[] textArray = watermark.getText().split("\n");
-        Font font = new Font("宋体", Font.PLAIN, 20);
-        Integer width = 400;
-        Integer height = 200;
+        Font font = new Font("宋体", Font.PLAIN, 100);
+        Integer width = 1500;
+        Integer height = 1500;
 
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         // 背景透明 开始
@@ -70,11 +70,11 @@ public class FontImageUtil {
         // 设置画笔字体
         g.setFont(font);
         // 设定倾斜度
-        g.shear(0.1, -0.26);
+        g.shear(0, 0);
         //设置字体平滑
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        int y = 50;
+        int y = 700;
         for (String s : textArray) {
             // 画出字符串
             g.drawString(s, 0, y);
