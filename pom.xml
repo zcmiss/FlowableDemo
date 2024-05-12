@@ -149,6 +149,16 @@
             <artifactId>aspose-words</artifactId>
             <version>23.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml-schemas</artifactId>
+            <version>4.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>easyexcel</artifactId>
+            <version>3.3.2</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.poi</groupId>
